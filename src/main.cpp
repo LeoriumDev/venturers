@@ -6,12 +6,14 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/noise.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 #include "camera/camera.hpp"
 #include "renderer/shader.hpp"
+#include "world/terrain.hpp"
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -20,17 +22,17 @@ void glfwErrorCallback(int error, const char* description);
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 
 constexpr int WIDTH = 800;
-constexpr int HEIGHT = 600;
+constexpr int HEIGHT = 450;
 
 float lastX = 400;
-float lastY = 300;
+float lastY = 225;
 
 bool firstMouse = true;
 
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-constexpr int BLOCK_SIZE = 500;
+constexpr int BLOCK_SIZE = 300;
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
@@ -127,7 +129,7 @@ int main() {
 
     for (int x = 0; x < BLOCK_SIZE; x++)
         for (int z = 0; z < BLOCK_SIZE; z++)
-            planePositions.emplace_back(x, 0.0f, z);
+            planePositions.emplace_back(x, terrainHeight(x, z), z);
 
     unsigned int VBO, VAO;
     glGenVertexArrays(1, &VAO);
@@ -145,7 +147,7 @@ int main() {
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void *>(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    unsigned int texture1, texture2;
+    unsigned int texture1;
 
     glGenTextures(1, &texture1);
     glBindTexture(GL_TEXTURE_2D, texture1);
@@ -159,7 +161,7 @@ int main() {
     int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(true);
 
-    unsigned char *data = stbi_load("assets/textures/container.jpg", &width, &height, &nrChannels, 0);
+    unsigned char *data = stbi_load("assets/textures/dirt.png", &width, &height, &nrChannels, 0);
 
     if (data) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -170,29 +172,8 @@ int main() {
 
     stbi_image_free(data);
 
-    glGenTextures(1, &texture2);
-    glBindTexture(GL_TEXTURE_2D, texture2);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    data = stbi_load("assets/textures/awesomeface.png", &width, &height, &nrChannels, 0);
-
-    if (data) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    } else {
-        std::cout << "Failed to load texture" << std::endl;
-    }
-
-    stbi_image_free(data);
-
     shader.use();
     shader.setInt("texture1", 0);
-    shader.setInt("texture2", 1);
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -208,8 +189,6 @@ int main() {
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture1);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2);
 
         shader.use();
 

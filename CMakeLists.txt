@@ -19,7 +19,9 @@ target_include_directories(glad PUBLIC
 
 add_executable(venturers
         src/main.cpp
-        src/camera/camera.hpp)
+        src/camera/camera.hpp
+        src/world/terrain.hpp
+        src/world/terrain.cpp)
 
 target_include_directories(venturers PRIVATE
         ${PROJECT_SOURCE_DIR}/external/stb
