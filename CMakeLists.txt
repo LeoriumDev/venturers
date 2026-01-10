@@ -19,7 +19,6 @@ target_include_directories(glad PUBLIC
 
 add_executable(venturers
         src/main.cpp
-        src/renderer/shader.cpp
         src/camera/camera.hpp)
 
 target_include_directories(venturers PRIVATE
