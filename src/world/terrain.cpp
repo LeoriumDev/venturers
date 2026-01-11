@@ -2,6 +2,10 @@
 
 #include "terrain.hpp"
 
+#include <vector>
+
+#include "glm/vec3.hpp"
+
 constexpr unsigned int seed = 123456789u;
 
 unsigned int hash(unsigned int x);
@@ -46,5 +50,27 @@ int terrainHeight(const int worldX, const int worldZ) {
     constexpr float frequency = 0.02f;
     constexpr float amplitude = 10.0f;
     return static_cast<int>((noise(worldX * frequency) + noise(worldZ * frequency)) * amplitude);
+}
+
+std::vector<glm::vec3> generateTerrain(int worldSize, int spacing) {
+    std::vector<glm::vec3> positions;
+
+    for (int x = 0; x < worldSize / 2; x++)
+        for (int z = 0; z < worldSize / 2; z++)
+            positions.emplace_back(x * spacing, terrainHeight(x, z), z * spacing);
+
+    for (int x = 0; x < worldSize / 2; x++)
+        for (int z = 0; z < worldSize / 2; z++)
+            positions.emplace_back(-x * spacing, terrainHeight(x, z), z * spacing);
+
+    for (int x = 0; x < worldSize / 2; x++)
+        for (int z = 0; z < worldSize / 2; z++)
+            positions.emplace_back(-x * spacing, terrainHeight(x, z), -z * spacing);
+
+    for (int x = 0; x < worldSize / 2; x++)
+        for (int z = 0; z < worldSize / 2; z++)
+            positions.emplace_back(x * spacing, terrainHeight(x, z), -z * spacing);
+
+    return positions;
 }
 
