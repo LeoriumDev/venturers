@@ -15,6 +15,8 @@
 #include "renderer/shader.hpp"
 #include "world/terrain.hpp"
 
+#define POLYGON_MODE false
+
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 const char* glfwErrorName(int error);
@@ -35,6 +37,52 @@ float lastFrame = 0.0f;
 constexpr int BLOCK_SIZE = 300;
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+glm::vec3 lightPos(0.0f, 5.0f, 0.0f);
+
+constexpr float vertices[] = {
+//   positions             normal vectors        texture coordinates
+    -0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   0.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   1.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,   0.0f, 0.0f,
+
+    -0.5f, -0.5f,  0.5f,   0.0f,  0.0f, 1.0f,    0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,   0.0f,  0.0f, 1.0f,    1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,   0.0f,  0.0f, 1.0f,    1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,   0.0f,  0.0f, 1.0f,    1.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,   0.0f,  0.0f, 1.0f,    0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,   0.0f,  0.0f, 1.0f,    0.0f, 0.0f,
+
+    -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,   1.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,   1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,   0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,   0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,   0.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,   1.0f, 0.0f,
+
+     0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f,   1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,   1.0f,  0.0f,  0.0f,   1.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f,   0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f,   0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,   1.0f,  0.0f,  0.0f,   0.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f,   1.0f, 0.0f,
+
+    -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,   0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,   1.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,   1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,   1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,   0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,   0.0f, 1.0f,
+
+    -0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,   0.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,   1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,   1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,   1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,   0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,   0.0f, 1.0f
+};
 
 int main() {
     glfwSetErrorCallback(glfwErrorCallback);
@@ -68,6 +116,10 @@ int main() {
 
     glEnable(GL_DEPTH_TEST);
 
+#if POLYGON_MODE
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+#endif
+
     int fbWidth, fbHeight;
     glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
     glViewport(0, 0, fbWidth, fbHeight);
@@ -78,58 +130,25 @@ int main() {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     const Shader shader("shaders/vertexShader.vert", "shaders/fragmentShader.frag");
-
-    constexpr float vertices[] = {
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-    };
+    const Shader lightingShader("shaders/lighting.vert", "shaders/lighting.frag");
 
     std::vector<glm::vec3> planePositions;
 
-
-
-    for (int x = 0; x < BLOCK_SIZE; x++)
-        for (int z = 0; z < BLOCK_SIZE; z++)
+    for (int x = 0; x < BLOCK_SIZE / 2; x++)
+        for (int z = 0; z < BLOCK_SIZE / 2; z++)
             planePositions.emplace_back(x, terrainHeight(x, z), z);
+
+    for (int x = 0; x < BLOCK_SIZE / 2; x++)
+        for (int z = 0; z < BLOCK_SIZE / 2; z++)
+            planePositions.emplace_back(-x, terrainHeight(x, z), z);
+
+    for (int x = 0; x < BLOCK_SIZE / 2; x++)
+        for (int z = 0; z < BLOCK_SIZE / 2; z++)
+            planePositions.emplace_back(-x, terrainHeight(x, z), -z);
+
+    for (int x = 0; x < BLOCK_SIZE / 2; x++)
+        for (int z = 0; z < BLOCK_SIZE / 2; z++)
+            planePositions.emplace_back(x, terrainHeight(x, z), -z);
 
     unsigned int VBO, VAO;
     glGenVertexArrays(1, &VAO);
@@ -140,12 +159,24 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void *>(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), reinterpret_cast<void *>(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), reinterpret_cast<void *>(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+    unsigned int lightVAO;
+
+    glGenVertexArrays(1, &lightVAO);
+    glBindVertexArray(lightVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(0);
 
     unsigned int texture1;
 
@@ -175,8 +206,6 @@ int main() {
     shader.use();
     shader.setInt("texture1", 0);
 
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
     while (!glfwWindowShouldClose(window)) {
         const float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
@@ -192,6 +221,22 @@ int main() {
 
         shader.use();
 
+        glm::vec3 center(0.5f, 5.0f, 0.0f);
+        glm::vec3 offset(0.0f, 0.0f, 20.0f);
+        const float t = static_cast<float>(glfwGetTime());
+
+        glm::mat4 m(1.0f);
+        m = glm::translate(m, center);
+        m = glm::rotate(m, t, glm::vec3(0,1,0));
+        m = glm::translate(m, offset);
+
+        lightPos = glm::vec3(m * glm::vec4(0,0,0,1));
+
+
+        shader.setVec3("lightColor",  1.0f, 1.0f, 1.0f);
+        shader.setVec3("lightPos", lightPos);
+        shader.setVec3("viewPos", camera.Position);
+
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), static_cast<float>(WIDTH) / static_cast<float>(HEIGHT), 0.1f, 1000.0f);
         shader.setMat4("projection", projection);
 
@@ -206,6 +251,19 @@ int main() {
 
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
+
+        lightingShader.use();
+
+        lightingShader.setMat4("projection", projection);
+        lightingShader.setMat4("view", view);
+
+        glm::mat4 lightingModel = glm::mat4(1.0f);
+        lightingModel = glm::translate(lightingModel, lightPos);
+        lightingModel = glm::scale(lightingModel, glm::vec3(0.2f));
+        lightingShader.setMat4("model", lightingModel);
+
+        glBindVertexArray(lightVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
